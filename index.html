@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Task Scheduler</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .modal-button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Distributed Task Scheduler</h1>
+        <button class="button is-primary modal-button" id="modal-btn">Submit Task</button>
+        <div class="modal" id="modal">
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">Submit Task</p>
+                    <button class="delete" aria-label="close" id="close-modal"></button>
+                </header>
+                <section class="modal-card-body">
+                    <form id="task-form">
+                        <div class="field">
+                            <label class="label">Task Name</label>
+                            <div class="control">
+                                <input class="input" type="text" id="task-name" required>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Task Description</label>
+                            <div class="control">
+                                <textarea class="textarea" id="task-description" required></textarea>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Schedule</label>
+                            <div class="control">
+                                <input class="input" type="datetime-local" id="task-schedule" required>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+                <footer class="modal-card-foot">
+                    <button class="button is-success" id="submit-task">Submit</button>
+                    <button class="button" id="cancel-task">Cancel</button>
+                </footer>
+            </div>
+        </div>
+        <table class="table is-fullwidth" id="task-table">
+            <thead>
+                <tr>
+                    <th>Task Name</th>
+                    <th>Task Description</th>
+                    <th>Schedule</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="task-tbody">
+            </tbody>
+        </table>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bulma@0.9.4/js/bulma.js"></script>
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+        document.getElementById('modal-btn').addEventListener('click', function() {
+            document.getElementById('modal').classList.add('is-active');
+        });
+
+        document.getElementById('close-modal').addEventListener('click', function() {
+            document.getElementById('modal').classList.remove('is-active');
+        });
+
+        document.getElementById('cancel-task').addEventListener('click', function() {
+            document.getElementById('modal').classList.remove('is-active');
+        });
+
+        document.getElementById('submit-task').addEventListener('click', function() {
+            const taskName = document.getElementById('task-name').value;
+            const taskDescription = document.getElementById('task-description').value;
+            const taskSchedule = document.getElementById('task-schedule').value;
+            const newTask = {
+                name: taskName,
+                description: taskDescription,
+                schedule: taskSchedule,
+                status: 'Scheduled'
+            };
+            tasks.push(newTask);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            updateTaskTable();
+            document.getElementById('task-form').reset();
+            document.getElementById('modal').classList.remove('is-active');
+        });
+
+        function updateTaskTable() {
+            const taskTbody = document.getElementById('task-tbody');
+            taskTbody.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${task.name}</td>
+                    <td>${task.description}</td>
+                    <td>${task.schedule}</td>
+                    <td>${task.status}</td>
+                `;
+                taskTbody.appendChild(row);
+            });
+        }
+
+        updateTaskTable();
+
+        // Basic scheduling algorithm for demonstration purposes
+        setInterval(function() {
+            const currentTime = new Date().toISOString().slice(0, 16);
+            tasks.forEach((task, index) => {
+                if (task.schedule <= currentTime && task.status === 'Scheduled') {
+                    tasks[index].status = 'Running';
+                    localStorage.setItem('tasks', JSON.stringify(tasks));
+                    updateTaskTable();
+                } else if (task.schedule <= currentTime && task.status === 'Running') {
+                    tasks[index].status = 'Completed';
+                    localStorage.setItem('tasks', JSON.stringify(tasks));
+                    updateTaskTable();
+                }
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
